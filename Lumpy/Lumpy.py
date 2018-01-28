@@ -19,7 +19,8 @@ classes, including classes defined in libraries and the Python
 interpreter.
 
 
-  Copyright 2005 Allen B. Downey
+  Copyright (C) 2018 Ashwin Vishnu Mohanan
+  Copyright (C) 2005 Allen B. Downey
 
     This file contains wrapper classes I use with tkinter.  It is
     mostly for my own use; I don't support it, and it is not very
@@ -42,23 +43,20 @@ interpreter.
     02110-1301 USA
     
 """
+from __future__ import division
+from __future__ import print_function
 
 
+
+from builtins import str
+from past.utils import old_div
+from builtins import object
 
 import inspect, traceback
-from Gui import *
+import tkinter as Tkinter
 
-# get the version of Python
-v = sys.version.split()[0].split('.')
-if v[0] != '2':
-    print 'You must have at least Python version 2.0 to run Lumpy.'
-    sys.exit()
+from .Gui import *
 
-minor = int(v[1])
-if minor < 4:
-    # need to find a substitute implementation of set
-    pass
-        
 
 # most text uses the font specified below; some labels
 # in object diagrams use smallfont.  Lumpy uses the size
@@ -146,7 +144,7 @@ class Thing(object):
     def __new__(cls, *args, **kwds):
         """override __new__ so we can count the number of Things"""
         Thing.things_created += 1
-        return object.__new__(cls, *args, **kwds)
+        return object.__new__(cls)
     
     def bbox(self):
         """return the bounding box of this object if it is drawn
@@ -193,7 +191,7 @@ class Thing(object):
         # the number of things.
         Thing.things_drawn += 1
         if Thing.things_drawn % 100 == 0:
-            print Thing.things_drawn
+            print(Thing.things_drawn)
             #self.diag.lumpy.update()
 
         # each thing has a list of tags: its own tag plus
@@ -301,7 +299,7 @@ class Mapping(Thing):
     
     def __init__(self, lumpy, val):
         lumpy.register(self, val)
-        self.bindings = make_kvps(lumpy, val.items())
+        self.bindings = make_kvps(lumpy, list(val.items()))
         self.boxoptions = dict(outline='purple')
 
         if lumpy.pedantic:
@@ -450,11 +448,11 @@ class Instance(Mapping):
         else:
             # otherwise, display all of the instance variables
             if hasdict(val):
-                iter = val.__dict__.iteritems()
+                iter = val.__dict__.items()
             elif hasslots(val):
                 iter = [(k, getattr(val, k)) for k in val.__slots__]
             else:
-                t = [k for k, v in type(val).__dict__.iteritems()
+                t = [k for k, v in list(type(val).__dict__.items())
                      if str(v).find('attribute') == 1]
                 iter = [(k, getattr(val, k)) for k in t]
             
@@ -466,7 +464,7 @@ class Instance(Mapping):
                 seq += make_bindings(lumpy, enumerate(val))
 
             if isinstance(val, dict):
-                seq += make_bindings(lumpy, val.iteritems())
+                seq += make_bindings(lumpy, iter(list(val.items())))
 
         # if this instance has a name attribute, show it
         attr = '__name__'
@@ -491,8 +489,8 @@ class Frame(Mapping):
     """The graphical representation of a frame,
     implemented as a list of Bindings"""
     def __init__(self, lumpy, frame):
-        iter = frame.locals.iteritems()
-        self.bindings = make_bindings(lumpy, iter)
+        iterator = frame.locals.items()
+        self.bindings = make_bindings(lumpy, iterator)
         self.label = frame.func
         self.boxoptions = dict(outline='blue')
     
@@ -607,7 +605,7 @@ class ClassDiagramClass(Thing):
         # self.methods is the list of methods defined in this class.
         # self.cvars is the list of class variables.
         # self.ivars is a set of instance variables.
-        
+
         self.methods = []
         self.cvars = []
         self.ivars = set()
@@ -624,14 +622,15 @@ class ClassDiagramClass(Thing):
         # have to wait until the Lumpy representation of the stack
         # is complete before we can go looking for instance vars.
         for key, val in classobj.__dict__.items():
-            if vars != None and key not in vars: continue
-            
+            if vars is not None and key not in vars:
+                continue
+
             if iscallable(val):
                 self.methods.append(val)
             else:
                 self.cvars.append(key)
 
-        self.methods.sort()
+        # self.methods.sort()
         self.cvars.sort()
 
         self.boxoptions = dict(outline='blue')
@@ -853,7 +852,7 @@ class ParentArrow(Thing):
         bbox = canvas.bbox(parent.head)
         p = bbox.midright()
         q = canvas.bbox(child.boxitem).midleft()
-        midx = (p.x + q.x) / 2.0
+        midx = old_div((p.x + q.x), 2.0)
         m1 = [midx, p.y]
         m2 = [midx, q.y]
         coords = [p, m1, m2, q]
@@ -942,11 +941,11 @@ def make_thing(lumpy, val):
     # values
     if lumpy.pedantic:
         thing = lumpy.lookup(val)
-        if thing != None: return thing
+        if thing is not None: return thing
 
     # otherwise for simple immutable types, ignore aliasing and
     # just draw
-    simple = (str, bool, int, long, float, complex, NoneType)
+    simple = (str, bool, int, int, float, complex, type(None))
 
     if isinstance(val, simple):
         thing = Simple(lumpy, val)
@@ -954,7 +953,7 @@ def make_thing(lumpy, val):
 
     # now check for aliasing even if we're not pedantic
     thing = lumpy.lookup(val)
-    if thing != None: return thing
+    if thing is not None: return thing
 
     # check the type of the value and dispatch accordingly
     if type(val) == type(Lumpy) or type(val) == type(type(int)):
@@ -997,7 +996,7 @@ class Snapframe(object):
             try:
                 del self.locals[key]
             except KeyError:
-                print key, "this shouldn't happen"
+                print(key, "this shouldn't happen")
 
 class Snapshot(object):
     """the data structure that represents a stack"""
@@ -1016,7 +1015,7 @@ class Snapshot(object):
     def spew(self):
         """print the frames in this snapshot"""
         for frame in self.frames:
-            print frame.func, frame
+            print(frame.func, frame)
 
     def clean(self, ref):
         """Remove all the variables in the reference stack from self"""
@@ -1105,7 +1104,7 @@ class Lumpy(Gui):
         
     def opaque_module(self, modobj):
         """make all classes defined in this module opaque"""
-        for var, val in modobj.__dict__.iteritems():
+        for var, val in list(modobj.__dict__.items()):
             if type(val) == type(Lumpy):
                 self.opaque_class(val)
 
@@ -1201,7 +1200,7 @@ class Lumpy(Gui):
         # scan the the stack looking for has-a
         # relationships (note that we can't do this until the
         # stack is complete)
-        for val in self.values.values():
+        for val in list(self.values.values()):
             if isinstance(val, Instance) and val.cls is not None:
                 val.scan_bindings(val.cls)
             
@@ -1420,7 +1419,7 @@ def union(one, other):
 ###########################
 
 def main(script, *args, **kwds):
-    class Cell:
+    class Cell(object):
         def __init__(self, car=None, cdr=None):
             self.car = car
             self.cdr = cdr
@@ -1432,7 +1431,7 @@ def main(script, *args, **kwds):
         t = [1, 2, 3]
         t.append(t)
         y = None
-        z = 1L
+        z = 1
         long_name = 'allen'
         d = dict(a=1, b=2)
 

@@ -10,4 +10,3 @@ lumpy = Lumpy.Lumpy()
 lumpy.transparent_class(Lumpy.Lumpy)
 
 lumpy.class_diagram()
-

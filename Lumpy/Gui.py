@@ -55,10 +55,8 @@ avoid keeping track of parent widgets explicitly.
 
     GuiCanvas provides wrappers for the canvas item methods.
 
-"""
-
-"""
-  Copyright 2005 Allen B. Downey
+  Copyright (C) 2018 Ashwin Vishnu Mohanan
+  Copyright (C) 2005 Allen B. Downey
 
     This file contains wrapper classes I use with tkinter.  It is
     mostly for my own use; I don't support it, and it is not very
@@ -74,18 +72,26 @@ avoid keeping track of parent widgets explicitly.
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program; if not, see
-    http://www.gnu.org/licenses/gpl.html or write to the Free Software
-    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
-    02110-1301 USA 
+    You should have received a copy of the GNU General Public License along
+    with this program; if not, write to the Free Software Foundation, Inc.,
+    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
 """
+from __future__ import division
+from __future__ import print_function
 
 
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
+from builtins import zip
+from builtins import range
+from past.utils import old_div
+from builtins import object
 from math import *
-from Tkinter import *
-from tkFont import *
+from tkinter import *
+from tkinter.font import *
 
 class Gui(Tk):
     """Gui provides wrappers for many of the methods in the Tk
@@ -128,7 +134,7 @@ class Gui(Tk):
         """make a return a frame.
         As a side effect, the new frame becomes the current frame
         """
-        options.update(dict(zip(Gui.argnames,args)))
+        options.update(dict(list(zip(Gui.argnames,args))))
         underride(options, fill=BOTH, expand=1)
         if self.debug:
             override(options, bd=5, relief=RIDGE)
@@ -201,7 +207,7 @@ class Gui(Tk):
         """make an entry widget."""
         
         # roll the positional arguments into the option dictionary
-        options.update(dict(zip(Gui.argnames,args)))
+        options.update(dict(list(zip(Gui.argnames,args))))
 
         # underride fill and expand
         underride(options, fill=BOTH, expand=1)
@@ -291,7 +297,7 @@ class Gui(Tk):
         w.val = options['value']
         return w
 
-    class ScrollableText:
+    class ScrollableText(object):
         """a scrollable text entry is a
         compound widget with a frame that contains a
         text entry on the left and a scrollbar on the right.
@@ -309,7 +315,7 @@ class Gui(Tk):
         """make a scrollable text entry"""
         return self.ScrollableText(self, *args, **options)
 
-    class ScrollableCanvas:
+    class ScrollableCanvas(object):
         """a compound widget with a grid that contains a canvas
         and two scrollbars
         """
@@ -344,7 +350,7 @@ class Gui(Tk):
         # roll the positional arguments into the option dictionary,
         # then divide into options for the widget constructor, pack
         # or grid
-        options.update(dict(zip(Gui.argnames,args)))
+        options.update(dict(list(zip(Gui.argnames,args))))
         widopt, packopt, gridopt = split_options(options)
 
         # make the widget and either pack or grid it
@@ -443,14 +449,14 @@ class BBox(list):
         """return the midpoint of the right edge as a Pos object
         """
         x = bbox.right
-        y = (bbox.top + bbox.bottom) / 2.0
+        y = old_div((bbox.top + bbox.bottom), 2.0)
         return Pos([x, y])
 
     def midleft(bbox):
         """return the midpoint of the left edge as a Pos object
         """
         x = bbox.left
-        y = (bbox.top + bbox.bottom) / 2.0
+        y = old_div((bbox.top + bbox.bottom), 2.0)
         return Pos([x, y])
 
     def union(self, other):
@@ -501,7 +507,7 @@ def pairiter(seq):
     """return an iterator that yields consecutive pairs from seq"""
     it = iter(seq)
     while True:
-        yield [it.next(), it.next()]
+        yield [next(it), next(it)]
 
 def pair(seq):
     """return a list of consecutive pairs from seq"""
@@ -519,7 +525,7 @@ def flatten(seq):
 
 def underride(d, **kwds):
     """Add entries from (kwds) to (d) only if they are not already set"""
-    for key, val in kwds.iteritems():
+    for key, val in kwds.items():
         if key not in d:
             d[key] = val
 
@@ -699,7 +705,7 @@ class GuiCanvas(Canvas):
         fp.close()
 
 
-class Transform:
+class Transform(object):
     """the parent class of transforms, Transform provides methods
     for transforming lists of coordinates.  Subclasses of Transform
     are supposed to implement trans() and invert()
@@ -731,13 +737,13 @@ class CanvasTransform(Transform):
         self.scale = scale
     
     def trans(self, p):
-        x =  p[0] * self.scale[0] + self.ca.width/2
-        y = -p[1] * self.scale[1] + self.ca.height/2      
+        x =  p[0] * self.scale[0] + old_div(self.ca.width,2)
+        y = -p[1] * self.scale[1] + old_div(self.ca.height,2)      
         return [x, y]
 
     def invert(self, p):
-        x =  (p[0] - self.ca.width/2) / self.scale[0]
-        y = - (p[1] - self.ca.height/2) / self.scale[1]
+        x =  old_div((p[0] - old_div(self.ca.width,2)), self.scale[0])
+        y = old_div(- (p[1] - old_div(self.ca.height,2)), self.scale[1])
         return [x, y]
 
 
@@ -755,8 +761,8 @@ class ScaleTransform(Transform):
         return [x, y]
 
     def invert(self, p):
-        x = p[0] / self.scale[0]
-        y = p[1] / self.scale[1]
+        x = old_div(p[0], self.scale[0])
+        y = old_div(p[1], self.scale[1])
         return [x, y]
 
 
@@ -799,7 +805,7 @@ class SwirlTransform(RotateTransform):
         return self.rotate(p, -self.theta*d)
 
 
-class Callable:
+class Callable(object):
     """this class is used to wrap a function and its arguments
     into an object that can be passed as a callback parameter
     and invoked later.  It is from the Python Cookbook 9.1, page 302
@@ -811,7 +817,7 @@ class Callable:
         self.kwds = kwds
 
     def __call__(self):
-        return apply(self.func, self.args, self.kwds)
+        return self.func(*self.args, **self.kwds)
 
     def __str__(self):
         return self.func.__name__
@@ -906,7 +912,7 @@ def widget_demo():
     def print_selection(event):
         """print the current color in the listbox
         """
-        print get_selection()
+        print(get_selection())
 
     def apply_color():
         """get the current color from the listbox and apply it
@@ -995,7 +1001,7 @@ def widget_demo():
         weight = b1.var.get()
         slant = b2.var.get()
         font = Font(family=family, size=size, weight=weight, slant=slant)
-        print font.actual()
+        print(font.actual())
         ca.itemconfig(item3, font=font)
 
     g.la(TOP, text='Font:')
@@ -1057,7 +1063,7 @@ def widget_demo():
     g.gr(3, rweights=[1,1,1], cweights=[1,1,1], side=LEFT)
 
     def print_num(i):
-        print i
+        print(i)
 
     # grid the buttons
     for i in range(1, 10):

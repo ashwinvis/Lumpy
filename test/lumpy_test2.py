@@ -1,14 +1,12 @@
 #!/usr/bin/python
-
-from World import *
-
 import Lumpy
+
+
 lumpy = Lumpy.Lumpy()
-lumpy.opaque_class(Interpreter)
+lumpy.opaque_class(Lumpy.Gui)
 lumpy.make_reference()
 
-world = TurtleWorld()
-bob = Turtle(world)
+lumpy2 = Lumpy.Lumpy()
 
 lumpy.object_diagram()
 lumpy.class_diagram()
